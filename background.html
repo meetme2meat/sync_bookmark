@@ -1,0 +1,55 @@
+<html> 
+  <head>
+    <script>
+    
+    function fetchBookmarks()
+     {  var xmlContent = ""
+       chrome.bookmarks.getTree(function(bookmarks) { 
+       var parentBookmarks = bookmarks[0].children  
+      
+         for (var i=0;i<parentBookmarks.length;i++) {
+          if (typeof(parentBookmarks[i].children) == "undefined") 
+            xmlContent += "<title>"+parentBookmarks[i].title+"</title> <url>"+parentBookmarks[i].url+"</url>"
+          else 
+           xmlContent +="<"+parentBookmarks[i].title +">"+getChildren(parentBookmarks[i])+"</"+parentBookmarks[i].title+">"             
+         }
+         console.log(xmlContent);     
+       })
+
+     }
+      
+    function getChildren(bookmarks) {
+       var xmlContent = "" 
+      // console.log(bookmarks);
+       if (typeof(bookmarks.children) == "undefined") {   
+         xmlContent += "<title>"+bookmarks[i].title+"</title> <url>"+bookmarks[i].url+"</url>"
+       } 
+       else{
+         for(var i=0;i < bookmarks.children.length;i++) {
+           // console.log(i);
+           if (typeof(bookmarks.children[i].children) == "undefined") {
+             xmlContent += "<title>"+bookmarks.children[i].title+"</title> <url>"+bookmarks.children[i].url+"</url>"
+              
+             }
+           else {
+            // console.log(bookmarks.children[i].title);
+             //console.log(bookmarks.children);
+             // console.log(bookmarks.children);
+            // console.log(xmlContent);
+             
+             xmlContent += "<"+bookmarks.children[i].title+">"+getChildren(bookmarks.children[i])+"</"+bookmarks.children[i].title+">"
+            } 
+           
+         }
+       }  
+       return xmlContent;
+    } 
+     
+    </script>
+    <script>
+      fetchBookmarks();
+    </script>
+  </head>
+</html>
+
+

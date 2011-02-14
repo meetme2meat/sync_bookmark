@@ -1,0 +1,19 @@
+{
+  "name" : "Sync BookMark",
+  "background_page": "background.html",
+  "version" : "1.0",
+  "content_script" : {
+    "css"       : ["bookmark.css"],
+    "js"        : ["js/jquery.js","js/bookmark.js"]
+    
+  },
+  "browser_action"  :  {
+    "default_icon"  :  "images/bookmark.png",    
+    "default_title" :  "Syn Bookmark",
+    "default_popup" :  "bookmark.html"
+  },  
+  "permissions" : [ 
+    "bookmarks","management","contextMenus","unlimitedStorage","tabs"
+    
+  ]
+}  
