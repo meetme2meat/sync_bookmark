@@ -1,0 +1,12 @@
+sync_bookmark is a Chrome Extension that let you synchronize your Bookmark at central Bookmark Manager server 
+
+so you don't have to manage to do same
+
+TODO
+ - Build a BookMark server
+  
+ - Creating a API 
+  
+ - Synchronizing Bookmark at regular Interval to BookMark Server
+  
+  
