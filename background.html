@@ -13,9 +13,11 @@
           else 
            xmlContent +="<"+parentBookmarks[i].title +">"+getChildren(parentBookmarks[i])+"</"+parentBookmarks[i].title+">"             
          }
-         console.log(xmlContent);     
+         //var params = xmlContent;
+       // console.log(xmlContent);     
        })
-
+      // console.log(xmlContent);
+      return xmlContent;
      }
       
     function getChildren(bookmarks) {
@@ -47,7 +49,34 @@
      
     </script>
     <script>
-      fetchBookmarks();
+    function make_ajax_request(params) {
+      console.log("Making Ajax Request");
+      http = new XMLHttpRequest();
+      http.open("POST","http://10.0.2.16/hello",false);
+      http.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+      http.onreadystatechange = when_ready;
+      http.send(params);
+    }
+    
+    function when_ready()
+     {   
+      if (http.readyState == 4 && http.status == 200) 
+        {   
+          var response = http.responseText ; 
+          console.log("Response Received");
+          console.log(response) 
+        } 
+     }
+    function syn_bookmark() {
+      console.log("Fetching Bookmarks")
+      params = fetchBookmarks();
+      console.log("Bookmark Fetched");
+      make_ajax_request(params)   
+    }  
+    window.onload = function() { 
+     console.log("Onload");
+     setInterval("syn_bookmark()",120000);
+    }
     </script>
   </head>
 </html>
