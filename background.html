@@ -1,82 +1,143 @@
 <html> 
   <head>
     <script>
-    
-    function fetchBookmarks()
-     {  var xmlContent = ""
-       chrome.bookmarks.getTree(function(bookmarks) { 
-       var parentBookmarks = bookmarks[0].children  
-      
-         for (var i=0;i<parentBookmarks.length;i++) {
-          if (typeof(parentBookmarks[i].children) == "undefined") 
-            xmlContent += "<title>"+parentBookmarks[i].title+"</title> <url>"+parentBookmarks[i].url+"</url>"
-          else 
-           xmlContent +="<"+parentBookmarks[i].title +">"+getChildren(parentBookmarks[i])+"</"+parentBookmarks[i].title+">"             
-         }
-         //var params = xmlContent;
-       // console.log(xmlContent);     
-       })
-      // console.log(xmlContent);
-      return xmlContent;
-     }
-      
-    function getChildren(bookmarks) {
-       var xmlContent = "" 
-      // console.log(bookmarks);
-       if (typeof(bookmarks.children) == "undefined") {   
-         xmlContent += "<title>"+bookmarks[i].title+"</title> <url>"+bookmarks[i].url+"</url>"
-       } 
-       else{
-         for(var i=0;i < bookmarks.children.length;i++) {
-           // console.log(i);
-           if (typeof(bookmarks.children[i].children) == "undefined") {
-             xmlContent += "<title>"+bookmarks.children[i].title+"</title> <url>"+bookmarks.children[i].url+"</url>"
-              
-             }
-           else {
-            // console.log(bookmarks.children[i].title);
-             //console.log(bookmarks.children);
-             // console.log(bookmarks.children);
-            // console.log(xmlContent);
-             
-             xmlContent += "<"+bookmarks.children[i].title+">"+getChildren(bookmarks.children[i])+"</"+bookmarks.children[i].title+">"
-            } 
-           
-         }
-       }  
-       return xmlContent;
-    } 
      
-    </script>
-    <script>
-    function make_ajax_request(params) {
-      console.log("Making Ajax Request");
-      http = new XMLHttpRequest();
-      http.open("POST","http://10.0.2.16/hello",false);
-      http.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-      http.onreadystatechange = when_ready;
-      http.send(params);
+     
+     
+   function EventedArray(handler) {
+      this.stack = [];
+      this.mutationHandler = handler || function() {};
+      this.setHandler = function(f) {
+        this.mutationHandler = f;
+      };
+      this.callHandler = function() { 
+          if(typeof this.mutationHandler == 'function') {
+            this.mutationHandler();
+        }
+      };
+      
+      this.push = function(obj) {
+        console.log("FOUR")
+        this.stack.push(obj);
+        this.callHandler();
+      };
+      
+      this.pop = function(value) {
+        if ((typeof value == "undefined") || (value == "true") )
+          this.callHandler();
+          return this.stack.pop();
+      };
+      
+      this.last =  function() {
+         console.log(this.stack);
+        return this.stack[this.stack.length-1];
+      }
+      
+      this.getArray = function() {
+        return this.stack;
+       }
     }
+
+    var handler = function() {
+      console.log("FIVE");
+      make_ajax_call(this)
+    };
+     
+    var resultSet = new EventedArray();
+    resultSet.setHandler(handler); 
+  
+     var bookmarkDB = {}
+     bookmarkDB.webdb = {};
+     bookmarkDB.webdb.db = null;
+     
+     bookmarkDB.webdb.open = function() {
+        console.log("OPENING A DATABASE ...")
+        var dbSize = 5 * 1024 * 1024; // 5MB
+        bookmarkDB.webdb.db = openDatabase("bookmarkDB", "1.0", "Bookmark Database", dbSize);
+      }
+      
+       bookmarkDB.webdb.createTable = function() {
+       console.log("CREATING A DATABASE ...") 
+        var db = bookmarkDB.webdb.db;
+          db.transaction(function(transaction) {
+            transaction.executeSql("CREATE TABLE IF NOT EXISTS bookmark_db(ID INTEGER PRIMARY KEY ASC, data TEXT, added_on DATETIME)", []);
+        });
+      }
     
-    function when_ready()
-     {   
-      if (http.readyState == 4 && http.status == 200) 
-        {   
-          var response = http.responseText ; 
-          console.log("Response Received");
-          console.log(response) 
-        } 
-     }
-    function syn_bookmark() {
-      console.log("Fetching Bookmarks")
-      params = fetchBookmarks();
-      console.log("Bookmark Fetched");
-      make_ajax_request(params)   
-    }  
-    window.onload = function() { 
-     console.log("Onload");
-     setInterval("syn_bookmark()",120000);
-    }
+     bookmarkDB.webdb.addBookmark = function(json_data) {
+        console.log("TWO");
+        var db = bookmarkDB.webdb.db;
+        db.transaction(function(transaction){
+          var addedOn = new Date();
+          transaction.executeSql("INSERT INTO bookmark_db(data, added_on) VALUES (?,?)",
+          [json_data, addedOn],successCallbacks,errorCallbacks);
+          });
+       }
+       
+      successCallbacks = function(transaction,sqlResult) {
+         console.log("THREE")
+         resultSet.push(sqlResult.insertId)
+      }
+      
+      errorCallbacks = function() {
+        console.log("ERROR");
+      }
+      
+     bookmarkDB.webdb.deleteBookmark = function() {
+          console.log("NINE");
+      }
+      
+      function init() {
+        console.log("LOADING INIT ...")
+        bookmarkDB.webdb.open();
+        bookmarkDB.webdb.createTable();
+      }
+              
+      function fetch_bookmarks() {
+         chrome.bookmarks.getTree(function(bookmarks) {
+           root = bookmarks[0];
+           bookmarks_json =  {"dateAdded" : root.dateAdded , "id" : root.id , "index" : root.index,"parentId" : root.parentId, "title" : root.title , "url" : root.url , "children" :  get_children(root)  }
+         })
+       }
+       
+       function get_children(bookmarks) {
+          var data = []
+          if (typeof bookmarks.children != "undefined"){  
+             bookmarks.children.forEach(function(bookmark) {
+              data.push({"dateAdded" : bookmark.dateAdded , "id" : bookmark.id , "index" : bookmark.index,"parentId" : bookmark.parentId, "title" : bookmark.title , "url" : bookmark.url , "children" :  get_children(bookmark)  })
+             })  
+          }
+          return data ;      
+        }
+        
+       
+        function onCreatedListener(id, bookmark) {
+            if (bookmark.url)
+              bookmark_json = {"created" :  { "dateAdded": bookmark.dateAdded , "id" : id , "parent_id" :  bookmark.parentId , "title" : bookmark.title  } }
+            else
+              bookmark_json = {"created" :  {"dateAdded": bookmark.dateAdded , "id" : id , "parent_id" :  bookmark.parentId , "title" : bookmark.title  , "url" : bookmark.url } }
+          console.log("ONE")
+          string_bookmark = JSON.stringify(bookmark_json); 
+          id = bookmarkDB.webdb.addBookmark(string_bookmark);
+          console.log("ODD-MAN-OUT")
+          //make_ajax_call(string_bookmark)
+         } 
+         
+         
+         
+         make_ajax_call = function(obj) {
+           console.log("SIX");
+           console.log (" ------");
+           console.log("SEVEN");
+           console.log(obj);
+           id = obj.last();
+           console.log(id);
+           console.log("EIGHT");
+           bookmarkDB.webdb.deleteBookmark(id)
+         } 
+         
+        chrome.bookmarks.onCreated.addListener(onCreatedListener);
+        init(); 
     </script>
   </head>
 </html>
